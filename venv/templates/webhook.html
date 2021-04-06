@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Github Webhooks</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+      integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      #parent {
+        width: 70%;
+        height: 40%;
+        margin: 0 auto;
+        margin-top: 100px;
+      }
+      h3 {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="parent">
+      <h3>
+        Live updates from github webhooks for the "action-repo" repository
+      </h3>
+      <br />
+      <div id="table">
+        <h5 id="last"></h5>
+        <table id="data-table" class="table table-striped">
+          <thead>
+            <!--<tr>-->
+            <!--  <th scope="col">S.no</th>-->
+            <!--  <th scope="col">Author</th>-->
+            <!--  <th scope="col">Push</th>-->
+            <!--  <th scope="col">Merge</th>-->
+            <!--</tr>-->
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <h6>Displaying last 10 updates</h6>
+      </div>
+    </div>
+  </body>
+  <script>
+    var branch = "";
+    var author = "";
+    var time = "";
+    var from = "";
+    var to = "";
+    setInterval(() => {
+      $.ajax({
+        url: "/",
+        type: "post",
+        success: function (res) {
+          document.getElementById("tbody").innerHTML = "";
+          // console.log(res);
+          // console.log(res["res"]["data"]["repository"]["default_branch"]);
+          // console.log(res["res"]["data"]["commits"][0]["author"]["name"]);
+          // console.log(res["res"]["data"]["commits"][0]["timestamp"]);
+          for (let x in res["data"]) {
+            if (res["data"][x]["data"].hasOwnProperty("pull_request")) {
+              pull_request(res["data"][x]);
+            } else {
+              push(res["data"][x]);
+            }
+          }
+
+          // res["res"]["data"]["pull_request"]["user"]["login"];
+          // res["res"]["data"]["pull_request"]["head"]["label"];
+          // res["res"]["data"]["pull_request"]["base"]["label"];
+        },
+        error: function (e) {
+          console.log(e);
+        },
+        dataType: "JSON",
+      });
+    }, 15000);
+    setInterval(() => {
+      var time = new Date();
+      var current_time =
+        time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds();
+      $("#last").text("Last sync: " + current_time);
+    }, 15000);
+
+    function push(data) {
+      branch = data["data"]["repository"]["default_branch"];
+      author = data["data"]["commits"][0]["author"]["name"];
+      time = data["data"]["commits"][0]["timestamp"];
+      update_push();
+    }
+    function pull_request(data) {
+      author = data["data"]["sender"]["login"];
+      from = data["data"]["pull_request"]["head"]["label"];
+      to = data["data"]["pull_request"]["base"]["label"];
+      time = data["data"]["pull_request"]["created_at"];
+      update_pull();
+    }
+
+    // var text = [author, name, time];
+    function update_push() {
+      var entry = document.getElementById("tbody");
+
+      var tr = document.createElement("TR");
+      var th = document.createElement("TH");
+      tr.appendChild(th);
+      var data = document.createTextNode(
+        author + " pushed to " + branch + " on " + time
+      );
+      th.appendChild(data);
+      entry.prepend(tr);
+      branch = "";
+      author = "";
+      time = "";
+      from = "";
+      to = "";
+    }
+    function update_pull() {
+      var entry = document.getElementById("tbody");
+      // entry.innerHTML = "";
+      var tr = document.createElement("TR");
+      var th = document.createElement("TH");
+      tr.appendChild(th);
+      var data = document.createTextNode(
+        author +
+          " submitted a pull request from " +
+          from +
+          " to " +
+          to +
+          " on " +
+          time
+      );
+      th.appendChild(data);
+      entry.prepend(tr);
+      branch = "";
+      author = "";
+      time = "";
+      from = "";
+      to = "";
+    }
+  </script>
+</html>
